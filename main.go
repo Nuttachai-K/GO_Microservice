@@ -14,11 +14,15 @@ import (
 func main() {
 
 	l := log.New(os.Stdout, "product-api", log.LstdFlags)
+
+	// create the handlers
 	ph := handlers.NewProducts(l)
 
+	// create a new serve mux and register the handlers
 	sm := http.NewServeMux()
 	sm.Handle("/", ph)
 
+	// create a new server
 	s := &http.Server{
 		Addr:         ":9090",
 		Handler:      sm,
@@ -38,13 +42,16 @@ func main() {
 		}
 	}()
 
+	// trap sigterm or interupt and gracefully shutdown the server
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, os.Interrupt)
 	signal.Notify(sigChan, os.Kill)
 
+	// Block until a signal is received.
 	sig := <-sigChan
 	l.Println("Got signal:", sig)
 
+	// gracefully shutdown the server, waiting max 30 seconds for current operations to complete
 	tc, _ := context.WithTimeout(context.Background(), 30*time.Second)
 	s.Shutdown(tc)
 
